@@ -1,11 +1,10 @@
 use bevy::prelude::*;
 
+mod ui_plugin;
+
 fn main() {
     App::build()
-        .add_system(hello_world.system())
+        .add_plugins(DefaultPlugins)
+        .add_plugin(ui_plugin::UIPlugin)
         .run();
-}
-
-fn hello_world() {
-    println!("hello world!");
 }
