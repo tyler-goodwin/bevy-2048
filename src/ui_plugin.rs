@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use std::path::Path;
 
-use crate::events::ScoreChanged;
+use crate::events::{BestChanged, ScoreChanged};
 
 pub const WIDTH: f32 = 480.0;
 pub const HEIGHT: f32 = 640.0;
@@ -18,7 +18,8 @@ struct BestText;
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_startup_system(setup.system())
-            .add_system(score_changed_listener.system());
+            .add_system(score_changed_listener.system())
+            .add_system(best_changed_listener.system());
         // .add_system(animate.system());
     }
 }
@@ -60,6 +61,17 @@ fn score_changed_listener(
     for event in events.iter() {
         for mut text in query.iter_mut() {
             text.sections[0].value = format!("{}", event.score);
+        }
+    }
+}
+
+fn best_changed_listener(
+    mut events: EventReader<BestChanged>,
+    mut query: Query<&mut Text, With<BestText>>,
+) {
+    for event in events.iter() {
+        for mut text in query.iter_mut() {
+            text.sections[0].value = format!("{}", event.best);
         }
     }
 }
