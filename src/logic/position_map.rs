@@ -11,6 +11,7 @@ pub struct Position {
     pub y: usize,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum Direction {
     LEFT,
     RIGHT,

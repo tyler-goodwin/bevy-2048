@@ -1,4 +1,4 @@
-use crate::logic::{number::Number, position_map::Position};
+use crate::logic::{number::Number, position_map::Direction, position_map::Position};
 use bevy::prelude::*;
 
 pub struct EventRegistrationPlugin;
@@ -8,6 +8,7 @@ impl Plugin for EventRegistrationPlugin {
         app.add_event::<ScoreChanged>()
             .add_event::<BestChanged>()
             .add_event::<BlockAdded>()
+            .add_event::<MoveRequested>()
             .add_event::<GameOver>();
     }
 }
@@ -27,3 +28,15 @@ pub struct BlockAdded {
 }
 
 pub struct GameOver;
+
+pub struct MoveRequested {
+    pub direction: Direction,
+}
+
+impl MoveRequested {
+    pub fn new(direction: Direction) -> Self {
+        Self {
+            direction: direction,
+        }
+    }
+}

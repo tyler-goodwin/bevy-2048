@@ -1,7 +1,8 @@
 use bevy::prelude::*;
-use events::{EventRegistrationPlugin, ScoreChanged};
+use events::{EventRegistrationPlugin, MoveRequested, ScoreChanged};
 
 mod events;
+mod input;
 mod logic;
 mod ui_plugin;
 
@@ -31,8 +32,10 @@ fn main() {
         .insert_resource(State::default())
         .add_plugin(EventRegistrationPlugin)
         .add_plugin(logic::LogicPlugin)
+        .add_plugin(input::InputPlugin)
         .add_plugin(ui_plugin::UIPlugin)
         .add_system(score_changer.system())
+        .add_system(move_listener.system())
         .run();
 }
 
@@ -41,5 +44,11 @@ fn score_changer(time: Res<Time>, mut state: ResMut<State>, mut events: EventWri
         state.score += 1;
 
         events.send(ScoreChanged { score: state.score });
+    }
+}
+
+fn move_listener(mut events: EventReader<MoveRequested>) {
+    for event in events.iter() {
+        println!("Move requested towards {:?}", event.direction)
     }
 }
