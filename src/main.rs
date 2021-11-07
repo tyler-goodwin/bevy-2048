@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use events::{EventRegistrationPlugin, ScoreChanged};
 
 mod events;
+mod logic;
 mod ui_plugin;
 
 struct State {
@@ -29,6 +30,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .insert_resource(State::default())
         .add_plugin(EventRegistrationPlugin)
+        .add_plugin(logic::LogicPlugin)
         .add_plugin(ui_plugin::UIPlugin)
         .add_system(score_changer.system())
         .run();

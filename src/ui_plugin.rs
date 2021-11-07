@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use std::path::Path;
 
-use crate::events::{BestChanged, ScoreChanged};
+use crate::events::{BestChanged, BlockAdded, ScoreChanged};
+
+mod number_renderer;
 
 pub const WIDTH: f32 = 480.0;
 pub const HEIGHT: f32 = 640.0;
@@ -10,35 +12,71 @@ const FIELD_SIZE: f32 = 50.0 + 4.0 * CELL_SIZE;
 const LEFT_INDENT: f32 = (WIDTH - FIELD_SIZE) / 2.0;
 const TOP_INDENT: f32 = 150.0;
 
-pub struct UIPlugin;
+struct State {
+    pub root: Entity,
+    font: Handle<Font>,
+}
 
+impl State {
+    pub fn new() -> Self {
+        Self {
+            root: Entity::new(0),
+            font: Handle::default(),
+        }
+    }
+
+    pub fn font(&self) -> Handle<Font> {
+        self.font.clone()
+    }
+
+    pub fn set_font(&mut self, font: &Handle<Font>) {
+        self.font = font.clone();
+    }
+}
+
+pub struct UIPlugin;
 struct ScoreText;
 struct BestText;
+struct Root;
+
+fn column_x(number: i32) -> f32 {
+    LEFT_INDENT + (10.0 + (CELL_SIZE + 10.0) * number as f32)
+}
+
+fn row_y(number: i32) -> f32 {
+    TOP_INDENT + (10.0 + (CELL_SIZE + 10.0) * number as f32)
+}
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(setup.system())
+        app.insert_resource(State::new())
+            .add_startup_system(setup.system())
             .add_system(score_changed_listener.system())
-            .add_system(best_changed_listener.system());
+            .add_system(best_changed_listener.system())
+            .add_system(block_added_listener.system());
         // .add_system(animate.system());
     }
 }
 
 fn setup(
     mut commands: Commands,
+    mut state: ResMut<State>,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     commands.spawn_bundle(UiCameraBundle::default());
 
     let font: Handle<Font> = asset_server.load(Path::new("fonts").join("FiraSans-Bold.ttf"));
+    state.set_font(&font);
+
     let bg_color = materials.add(Color::rgb(0.725, 0.675, 0.627).into());
     let bg_cell_color = materials.add(Color::rgb(0.808, 0.753, 0.698).into());
 
-    commands
+    let root = commands
         .spawn_bundle(root(&mut materials))
+        .insert(Root)
         .with_children(|parent| {
-            build_header(parent, &mut materials, font);
+            build_header(parent, &mut materials, font.clone());
 
             parent
                 .spawn_bundle(background_field(bg_color))
@@ -49,9 +87,10 @@ fn setup(
                         }
                     }
                 });
-        });
+        })
+        .id();
 
-    // commands.spawn_bundle(heading(font));
+    state.root = root;
 }
 
 fn score_changed_listener(
@@ -73,6 +112,32 @@ fn best_changed_listener(
         for mut text in query.iter_mut() {
             text.sections[0].value = format!("{}", event.best);
         }
+    }
+}
+
+fn block_added_listener(
+    mut commands: Commands,
+    state: ResMut<State>,
+    mut events: EventReader<BlockAdded>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    for event in events.iter() {
+        println!(
+            "New blocked added with id: {}, number: {:?}, position: {:?}",
+            event.id, event.number, event.position
+        );
+        commands.entity(state.root).with_children(|parent| {
+            event.number.render(
+                event.id,
+                (
+                    column_x(event.position.x.try_into().unwrap()),
+                    row_y(event.position.y.try_into().unwrap()),
+                ),
+                parent,
+                &mut materials,
+                state.font(),
+            );
+        });
     }
 }
 
@@ -307,8 +372,8 @@ fn bg_cell(row: i32, col: i32, color: Handle<ColorMaterial>) -> NodeBundle {
             border: Rect::all(Val::Px(1.0)),
             position_type: PositionType::Absolute,
             position: Rect {
-                left: Val::Px((10 + (10 + CELL_SIZE as i32) * row) as f32),
-                top: Val::Px((10 + (10 + CELL_SIZE as i32) * col) as f32),
+                left: Val::Px((10 + (10 + CELL_SIZE as i32) * col) as f32),
+                top: Val::Px((10 + (10 + CELL_SIZE as i32) * row) as f32),
                 ..Default::default()
             },
             ..Default::default()
