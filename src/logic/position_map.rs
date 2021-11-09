@@ -47,19 +47,12 @@ impl PositionMap {
         self.positions[[x, y]]
     }
 
-    fn get_id(&self, x: usize, y: usize) -> Option<Id> {
-        if x >= WIDTH {
-            return None;
-        }
-        if y >= HEIGHT {
+    fn get_number(&self, x: i32, y: i32) -> Option<Number> {
+        if x < 0 || y < 0 {
             return None;
         }
 
-        self.positions[[x, y]]
-    }
-
-    fn get_number(&self, x: usize, y: usize) -> Option<Number> {
-        if let Some(id) = self.get_id(x, y) {
+        if let Some(id) = self.get(x.try_into().unwrap(), y.try_into().unwrap()) {
             if let Some(number) = self.blocks.get(&id) {
                 return Some(number.to_owned());
             }
@@ -84,5 +77,22 @@ impl PositionMap {
             }
         }
         None
+    }
+
+    pub fn has_available_moves(&self) -> bool {
+        for ((x, y), _) in self.positions.indexed_iter() {
+            if self.has_adjacent_equal_position(x.try_into().unwrap(), y.try_into().unwrap()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    fn has_adjacent_equal_position(&self, x: i32, y: i32) -> bool {
+        let it = self.get_number(x, y);
+        it == self.get_number(x - 1, y)
+            || it == self.get_number(x + 1, y)
+            || it == self.get_number(x, y - 1)
+            || it == self.get_number(x, y + 1)
     }
 }
