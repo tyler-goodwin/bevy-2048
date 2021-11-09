@@ -10,6 +10,8 @@ impl Plugin for EventRegistrationPlugin {
             .add_event::<BlockAdded>()
             .add_event::<MoveRequested>()
             .add_event::<BlocksMoved>()
+            .add_event::<RestartRequested>()
+            .add_event::<GameRestarted>()
             .add_event::<GameOver>();
     }
 }
@@ -43,3 +45,6 @@ impl MoveRequested {
 }
 
 pub struct BlocksMoved;
+
+pub struct RestartRequested;
+pub struct GameRestarted;

@@ -2,7 +2,7 @@ use bevy::input::keyboard::{KeyCode, KeyboardInput};
 use bevy::input::ElementState;
 use bevy::prelude::*;
 
-use crate::events::MoveRequested;
+use crate::events::{MoveRequested, RestartRequested};
 use crate::logic::position_map::Direction;
 
 pub struct InputPlugin;
@@ -16,6 +16,7 @@ impl Plugin for InputPlugin {
 fn handle_keyboard_input(
     mut input_events: EventReader<KeyboardInput>,
     mut move_events: EventWriter<MoveRequested>,
+    mut restart_events: EventWriter<RestartRequested>,
 ) {
     use KeyCode::*;
 
@@ -27,6 +28,7 @@ fn handle_keyboard_input(
                     Down => move_events.send(MoveRequested::new(Direction::BOTTOM)),
                     Left => move_events.send(MoveRequested::new(Direction::LEFT)),
                     Right => move_events.send(MoveRequested::new(Direction::RIGHT)),
+                    Space => restart_events.send(RestartRequested),
                     _ => (),
                 }
             }

@@ -95,4 +95,8 @@ impl PositionMap {
             || it == self.get_number(x, y - 1)
             || it == self.get_number(x, y + 1)
     }
+
+    pub fn has_any_blocks(&self) -> bool {
+        self.blocks.len() > 0
+    }
 }

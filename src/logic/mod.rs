@@ -7,7 +7,9 @@ pub mod position_map;
 use number::Number;
 use position_map::{Direction, Id, Position, PositionMap};
 
-use crate::events::{BlockAdded, BlocksMoved, GameOver, MoveRequested};
+use crate::events::{
+    BlockAdded, BlocksMoved, GameOver, GameRestarted, MoveRequested, RestartRequested,
+};
 
 pub enum GenerateResult {
     GameOver,
@@ -37,15 +39,22 @@ impl LogicState {
         }
     }
 
+    pub fn restart(&mut self) {
+        self.position_map = PositionMap::new();
+        self.current_id = 0;
+        self.is_game_over = false;
+        self.ready_for_next_move = true;
+    }
+
     pub fn generate_block(&mut self) -> GenerateResult {
         let id = self.current_id;
         self.current_id += 1;
 
         let random: f32 = rand::thread_rng().gen_range(0.0..1.0);
         let number = if random > 0.9 {
-            Number::ZERO
-        } else {
             Number::ONE
+        } else {
+            Number::ZERO
         };
 
         if let Some(position) = self.position_map.get_random_free_position() {
@@ -84,7 +93,9 @@ impl Plugin for LogicPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(LogicState::new())
             .add_startup_system(generate_starting_block.system())
-            .add_system(move_requested_listener.system());
+            .add_system(move_requested_listener.system())
+            .add_system(restart_request_listener.system())
+            .add_system(game_restarted_listener.system());
     }
 }
 
@@ -112,6 +123,40 @@ fn move_requested_listener(
             MoveBlockResult::None => (),
             MoveBlockResult::GameOver => game_over.send(GameOver),
             MoveBlockResult::Success => blocks_moved.send(BlocksMoved),
+        }
+    }
+}
+
+fn restart_request_listener(
+    mut state: ResMut<LogicState>,
+    mut events: EventReader<RestartRequested>,
+    mut restarted: EventWriter<GameRestarted>,
+) {
+    for _ in events.iter() {
+        if state.is_game_over {
+            state.restart();
+            restarted.send(GameRestarted);
+        }
+    }
+}
+
+fn game_restarted_listener(
+    mut state: ResMut<LogicState>,
+    mut events: EventReader<GameRestarted>,
+    mut block_added: EventWriter<BlockAdded>,
+) {
+    for _ in events.iter() {
+        if !state.position_map.has_any_blocks() {
+            if let GenerateResult::BlockAdded(id, number, position) = state.generate_block() {
+                println!("Block added!");
+                block_added.send(BlockAdded {
+                    id: id,
+                    number: number,
+                    position: position,
+                });
+            } else {
+                panic!("Unexpected result during first block generation")
+            }
         }
     }
 }

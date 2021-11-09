@@ -1,8 +1,11 @@
 use bevy::prelude::*;
 use std::path::Path;
 
-use crate::events::{BestChanged, BlockAdded, ScoreChanged};
+use crate::events::{BestChanged, BlockAdded, GameOver, GameRestarted, ScoreChanged};
 
+use self::{game_over_renderer::GameOverRoot, number_renderer::Block};
+
+mod game_over_renderer;
 mod number_renderer;
 
 pub const WIDTH: f32 = 480.0;
@@ -53,7 +56,9 @@ impl Plugin for UIPlugin {
             .add_startup_system(setup.system())
             .add_system(score_changed_listener.system())
             .add_system(best_changed_listener.system())
-            .add_system(block_added_listener.system());
+            .add_system(block_added_listener.system())
+            .add_system(game_over_listener.system())
+            .add_system(game_restarted_listener.system());
         // .add_system(animate.system());
     }
 }
@@ -138,6 +143,37 @@ fn block_added_listener(
                 state.font(),
             );
         });
+    }
+}
+
+fn game_over_listener(
+    mut commands: Commands,
+    state: ResMut<State>,
+    mut events: EventReader<GameOver>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    for _ in events.iter() {
+        println!("Rendering game over screen!");
+        commands.entity(state.root).with_children(|parent| {
+            game_over_renderer::render(parent, &mut materials, state.font())
+        });
+    }
+}
+
+fn game_restarted_listener(
+    mut commands: Commands,
+    mut events: EventReader<GameRestarted>,
+    block_entities: Query<Entity, With<Block>>,
+    game_over_entities: Query<Entity, With<GameOverRoot>>,
+) {
+    for _ in events.iter() {
+        for block in block_entities.iter() {
+            commands.entity(block).despawn_recursive();
+        }
+
+        for game_over_root in game_over_entities.iter() {
+            commands.entity(game_over_root).despawn_recursive();
+        }
     }
 }
 
