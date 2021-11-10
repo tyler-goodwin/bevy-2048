@@ -5,8 +5,8 @@ use crate::events::{BestChanged, BlockAdded, GameOver, GameRestarted, ScoreChang
 
 use self::{game_over_renderer::GameOverRoot, number_renderer::Block};
 
-mod game_over_renderer;
-mod number_renderer;
+pub mod game_over_renderer;
+pub mod number_renderer;
 
 pub const WIDTH: f32 = 480.0;
 pub const HEIGHT: f32 = 640.0;

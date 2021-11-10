@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use events::{EventRegistrationPlugin, MoveRequested, ScoreChanged};
 
+mod animation;
 mod events;
 mod input;
 mod logic;
