@@ -35,6 +35,7 @@ fn main() {
         .add_plugin(logic::LogicPlugin)
         .add_plugin(input::InputPlugin)
         .add_plugin(ui_plugin::UIPlugin)
+        .add_plugin(animation::AnimationPlugin)
         .add_system(score_changer.system())
         .add_system(move_listener.system())
         .run();

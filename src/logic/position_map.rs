@@ -79,7 +79,7 @@ impl PositionMap {
             return None;
         }
 
-        let chosen = rand::thread_rng().gen_range(0..=quantity);
+        let chosen = rand::thread_rng().gen_range(0..quantity);
         let mut current: i32 = -1;
         for ((x, y), value) in self.positions.indexed_iter() {
             if let None = value {

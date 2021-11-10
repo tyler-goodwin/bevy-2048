@@ -42,11 +42,11 @@ struct ScoreText;
 struct BestText;
 struct Root;
 
-fn column_x(number: i32) -> f32 {
+pub fn column_x(number: i32) -> f32 {
     LEFT_INDENT + (10.0 + (CELL_SIZE + 10.0) * number as f32)
 }
 
-fn row_y(number: i32) -> f32 {
+pub fn row_y(number: i32) -> f32 {
     TOP_INDENT + (10.0 + (CELL_SIZE + 10.0) * number as f32)
 }
 
@@ -177,12 +177,12 @@ fn game_restarted_listener(
     }
 }
 
-// fn animate(time: Res<Time>, mut query: Query<&mut Transform, With<Text>>) {
-//   for mut transform in query.iter_mut() {
-//     transform.translation.x = 100.0 * time.seconds_since_startup().sin() as f32;
-//     transform.translation.y = 100.0 * time.seconds_since_startup().cos() as f32;
-//   }
-// }
+fn animate(time: Res<Time>, mut query: Query<&mut Transform, With<Text>>) {
+    for mut transform in query.iter_mut() {
+        transform.translation.x = 100.0 * time.seconds_since_startup().sin() as f32;
+        transform.translation.y = 100.0 * time.seconds_since_startup().cos() as f32;
+    }
+}
 
 fn root(materials: &mut ResMut<Assets<ColorMaterial>>) -> NodeBundle {
     NodeBundle {

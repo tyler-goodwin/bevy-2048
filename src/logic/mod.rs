@@ -8,7 +8,8 @@ use number::Number;
 use position_map::{Direction, Id, Position, PositionMap};
 
 use crate::events::{
-    BlockAdded, BlocksMoved, GameOver, GameRestarted, MoveRequested, RestartRequested,
+    AnimationCompleted, BlockAdded, BlocksMoved, GameOver, GameRestarted, MoveRequested,
+    RestartRequested,
 };
 
 pub enum GenerateResult {
@@ -171,7 +172,8 @@ impl Plugin for LogicPlugin {
             .add_startup_system(generate_starting_block.system())
             .add_system(move_requested_listener.system())
             .add_system(restart_request_listener.system())
-            .add_system(game_restarted_listener.system());
+            .add_system(game_restarted_listener.system())
+            .add_system(animation_completed.system());
     }
 }
 
@@ -223,6 +225,29 @@ fn game_restarted_listener(
 ) {
     for _ in events.iter() {
         if !state.position_map.has_any_blocks() {
+            if let GenerateResult::BlockAdded(id, number, position) = state.generate_block() {
+                println!("Block added!");
+                block_added.send(BlockAdded {
+                    id: id,
+                    number: number,
+                    position: position,
+                });
+            } else {
+                panic!("Unexpected result during first block generation")
+            }
+        }
+    }
+}
+
+fn animation_completed(
+    mut state: ResMut<LogicState>,
+    mut events: EventReader<AnimationCompleted>,
+    mut block_added: EventWriter<BlockAdded>,
+) {
+    for _ in events.iter() {
+        if !state.ready_for_next_move {
+            state.ready_for_next_move = true;
+
             if let GenerateResult::BlockAdded(id, number, position) = state.generate_block() {
                 println!("Block added!");
                 block_added.send(BlockAdded {
