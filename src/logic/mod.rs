@@ -80,18 +80,18 @@ impl LogicState {
         }
 
         // Move blocks
-        println!("Moving blocks to {:?}", direction);
         let mut moves: Vec<(i32, Position)> = vec![];
         let mut merges: Vec<(i32, i32, Position)> = vec![];
 
-        let newMap = self.calculateNewMap(direction, &mut moves, &mut merges);
+        let new_map = self.calculate_new_map(direction, &mut moves, &mut merges);
+        new_map.print_map();
 
-        if !newMap.same_positions(&self.position_map) {
+        if !new_map.same_positions(&self.position_map) {
             // Wait for dependent plugins to be ready for next move, i.e animation
             self.ready_for_next_move = false;
 
             // This may need to go after animations completed
-            self.position_map = newMap;
+            self.position_map = new_map;
             MoveBlockResult::Success(BlocksMoved {
                 moves: moves,
                 merges: merges,
@@ -101,14 +101,65 @@ impl LogicState {
         }
     }
 
-    pub fn calculateNewMap(
+    pub fn calculate_new_map(
         &mut self,
         direction: Direction,
         moves: &mut Vec<(i32, Position)>,
         merges: &mut Vec<(i32, i32, Position)>,
     ) -> PositionMap {
-        todo!();
-        self.position_map.clone()
+        let mut new_map = self.position_map.new_with_existing_blocks();
+        let start_index = match direction {
+            Direction::LEFT | Direction::TOP => 0,
+            _ => 3,
+        };
+
+        #[allow(unused_assignments)]
+        let mut column_row = start_index;
+
+        let max: usize = 3;
+        for line in 0..=max {
+            let mut cur_pos = self
+                .position_map
+                .get_not_empty_position_from(direction, line);
+            column_row = start_index;
+
+            loop {
+                if let Some(cur_pos) = cur_pos {
+                    let new_pos = new_position(line, &mut column_row, direction);
+                    let current_id = self.position_map.get(cur_pos.x, cur_pos.y);
+                    self.position_map.set(cur_pos.x, cur_pos.y, None);
+
+                    let next_pos = self
+                        .position_map
+                        .get_not_empty_position_from(direction, line);
+
+                    let next_id = next_pos.map_or(None, |p| self.position_map.get(p.x, p.y));
+
+                    let current_number =
+                        current_id.map_or(None, |id| self.position_map.get_number_with_id(id));
+                    let next_number =
+                        next_id.map_or(None, |id| self.position_map.get_number_with_id(id));
+
+                    if next_id.is_some() && current_id.is_some() && current_number == next_number {
+                        // merge these blocks
+                        self.position_map.set(cur_pos.x, cur_pos.y, None);
+                        new_map.set(cur_pos.x, cur_pos.y, current_id);
+                        merges.push((current_id.unwrap(), next_id.unwrap(), new_pos));
+                    } else {
+                        new_map.set(new_pos.x, new_pos.y, current_id);
+                        moves.push((current_id.unwrap(), new_pos))
+                    }
+                } else {
+                    break;
+                }
+
+                cur_pos = self
+                    .position_map
+                    .get_not_empty_position_from(direction, line);
+            }
+        }
+
+        new_map
     }
 }
 
@@ -182,6 +233,28 @@ fn game_restarted_listener(
             } else {
                 panic!("Unexpected result during first block generation")
             }
+        }
+    }
+}
+
+fn new_position(line: usize, column_row: &mut usize, direction: Direction) -> Position {
+    let tmp = *column_row;
+    match direction {
+        Direction::LEFT => {
+            *column_row += 1;
+            Position { x: tmp, y: line }
+        }
+        Direction::RIGHT => {
+            *column_row -= 1;
+            Position { x: tmp, y: line }
+        }
+        Direction::TOP => {
+            *column_row += 1;
+            Position { x: line, y: tmp }
+        }
+        Direction::BOTTOM => {
+            *column_row -= 1;
+            Position { x: line, y: tmp }
         }
     }
 }

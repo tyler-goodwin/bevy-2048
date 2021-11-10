@@ -35,6 +35,13 @@ impl PositionMap {
         }
     }
 
+    pub fn new_with_existing_blocks(&self) -> Self {
+        Self {
+            positions: Array2::<Option<Id>>::from_elem((WIDTH, HEIGHT), None),
+            blocks: self.blocks.clone(),
+        }
+    }
+
     pub fn set(&mut self, x: usize, y: usize, id: Option<Id>) {
         self.positions[[x, y]] = id
     }
@@ -60,13 +67,19 @@ impl PositionMap {
         None
     }
 
+    pub fn get_number_with_id(&self, id: Id) -> Option<Number> {
+        self.blocks
+            .get(&id)
+            .map_or(None, |number| Some(number.clone()))
+    }
+
     pub fn get_random_free_position(&self) -> Option<Position> {
         let quantity: i32 = self.positions.iter().count() as i32;
         if quantity == 0 {
             return None;
         }
 
-        let chosen = rand::thread_rng().gen_range(0..quantity);
+        let chosen = rand::thread_rng().gen_range(0..=quantity);
         let mut current: i32 = -1;
         for ((x, y), value) in self.positions.indexed_iter() {
             if let None = value {
@@ -100,14 +113,49 @@ impl PositionMap {
         self.blocks.len() > 0
     }
 
-    pub fn clone(&self) -> Self {
-        Self {
-            positions: self.positions.clone(),
-            blocks: self.blocks.clone(),
-        }
-    }
-
     pub fn same_positions(&self, other: &PositionMap) -> bool {
         self.positions == other.positions
+    }
+
+    pub fn get_not_empty_position_from(
+        &self,
+        direction: Direction,
+        line: usize,
+    ) -> Option<Position> {
+        match direction {
+            Direction::LEFT => {
+                for i in 0..=3 {
+                    if let Some(_) = self.get(i, line) {
+                        return Some(Position { x: i, y: line });
+                    }
+                }
+            }
+            Direction::RIGHT => {
+                for i in (0..=3).rev() {
+                    if let Some(_) = self.get(i, line) {
+                        return Some(Position { x: i, y: line });
+                    }
+                }
+            }
+            Direction::TOP => {
+                for i in 0..=3 {
+                    if let Some(_) = self.get(line, i) {
+                        return Some(Position { x: line, y: i });
+                    }
+                }
+            }
+            Direction::BOTTOM => {
+                for i in (0..=3).rev() {
+                    if let Some(_) = self.get(line, i) {
+                        return Some(Position { x: line, y: i });
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    pub fn print_map(&self) {
+        println!("Map: {:?}", self.positions)
     }
 }
