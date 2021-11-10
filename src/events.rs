@@ -44,7 +44,10 @@ impl MoveRequested {
     }
 }
 
-pub struct BlocksMoved;
+pub struct BlocksMoved {
+    pub moves: Vec<(i32, Position)>,
+    pub merges: Vec<(i32, i32, Position)>,
+}
 
 pub struct RestartRequested;
 pub struct GameRestarted;

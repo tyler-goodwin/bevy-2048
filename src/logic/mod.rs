@@ -19,7 +19,7 @@ pub enum GenerateResult {
 pub enum MoveBlockResult {
     None,
     GameOver,
-    Success,
+    Success(BlocksMoved),
 }
 
 pub struct LogicState {
@@ -81,9 +81,34 @@ impl LogicState {
 
         // Move blocks
         println!("Moving blocks to {:?}", direction);
-        // Wait for dependent plugins to be ready for next move, i.e animation
-        self.ready_for_next_move = false;
-        MoveBlockResult::Success
+        let mut moves: Vec<(i32, Position)> = vec![];
+        let mut merges: Vec<(i32, i32, Position)> = vec![];
+
+        let newMap = self.calculateNewMap(direction, &mut moves, &mut merges);
+
+        if !newMap.same_positions(&self.position_map) {
+            // Wait for dependent plugins to be ready for next move, i.e animation
+            self.ready_for_next_move = false;
+
+            // This may need to go after animations completed
+            self.position_map = newMap;
+            MoveBlockResult::Success(BlocksMoved {
+                moves: moves,
+                merges: merges,
+            })
+        } else {
+            MoveBlockResult::None
+        }
+    }
+
+    pub fn calculateNewMap(
+        &mut self,
+        direction: Direction,
+        moves: &mut Vec<(i32, Position)>,
+        merges: &mut Vec<(i32, i32, Position)>,
+    ) -> PositionMap {
+        todo!();
+        self.position_map.clone()
     }
 }
 
@@ -122,7 +147,7 @@ fn move_requested_listener(
         match state.move_blocks_to(move_event.direction) {
             MoveBlockResult::None => (),
             MoveBlockResult::GameOver => game_over.send(GameOver),
-            MoveBlockResult::Success => blocks_moved.send(BlocksMoved),
+            MoveBlockResult::Success(event) => blocks_moved.send(event),
         }
     }
 }

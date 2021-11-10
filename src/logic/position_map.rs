@@ -99,4 +99,15 @@ impl PositionMap {
     pub fn has_any_blocks(&self) -> bool {
         self.blocks.len() > 0
     }
+
+    pub fn clone(&self) -> Self {
+        Self {
+            positions: self.positions.clone(),
+            blocks: self.blocks.clone(),
+        }
+    }
+
+    pub fn same_positions(&self, other: &PositionMap) -> bool {
+        self.positions == other.positions
+    }
 }
