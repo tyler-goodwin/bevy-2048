@@ -59,7 +59,6 @@ impl Plugin for UIPlugin {
             .add_system(block_added_listener.system())
             .add_system(game_over_listener.system())
             .add_system(game_restarted_listener.system());
-        // .add_system(animate.system());
     }
 }
 

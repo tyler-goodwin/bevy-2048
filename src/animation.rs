@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Add};
 
 use crate::{
     events::{AnimationCompleted, BlocksMoved},
@@ -67,21 +67,35 @@ fn blocks_moved_listener(mut state: ResMut<State>, mut events: EventReader<Block
     }
 }
 
+/**
+ * Because everything was built out of UI elements, this means that
+ * we don't have transforms for those elements, but instead Style
+ * components define where elements are placed via their position.
+ */
 fn run_animations(
     time: Res<Time>,
     mut state: ResMut<State>,
-    mut query: Query<(&mut Transform, &Block), With<Block>>,
+    mut query: Query<(&mut Style, &Block), With<Block>>,
     mut events: EventWriter<AnimationCompleted>,
 ) {
     if state.timer.tick(time.delta()).just_finished() {
-        for (mut transform, block) in query.iter_mut() {
+        for (mut style, block) in query.iter_mut() {
             if let Some(animation) = state.blocks.get_mut(&block.id) {
                 if animation.current_iter == 0 {
                     let divisor: u16 = animation.total_iter.try_into().unwrap();
                     let divisor: f32 = divisor.try_into().unwrap();
                     // Calculate step size on first loop
-                    let step_x: f32 = (animation.target.0 - transform.translation.x) / divisor;
-                    let step_y: f32 = (animation.target.1 - transform.translation.y) / divisor;
+                    let step_x: f32 = if let Val::Px(value) = style.position.left {
+                        (animation.target.0 - value) / divisor
+                    } else {
+                        panic!("Was not a pixel value");
+                    };
+
+                    let step_y: f32 = if let Val::Px(value) = style.position.top {
+                        (animation.target.1 - value) / divisor
+                    } else {
+                        panic!("Was not a pixel value");
+                    };
 
                     animation.step = (step_x, step_y);
                 }
@@ -89,8 +103,8 @@ fn run_animations(
                 animation.current_iter += 1;
 
                 let (x, y) = animation.step;
-                transform.translation.x = transform.translation.x + x;
-                transform.translation.y = transform.translation.y + y;
+                style.position.left = style.position.left.add(x);
+                style.position.top = style.position.top.add(y);
 
                 if animation.total_iter == animation.current_iter {
                     state.blocks.remove(&block.id);
