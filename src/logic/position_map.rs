@@ -92,21 +92,31 @@ impl PositionMap {
     }
 
     pub fn get_random_free_position(&self) -> Option<Position> {
-        let quantity: i32 = self.positions.iter().count() as i32;
+        let quantity: i32 = self
+            .positions
+            .iter()
+            .filter(|i| i.is_none())
+            .count()
+            .try_into()
+            .unwrap();
+
         if quantity == 0 {
             return None;
         }
 
         let chosen = rand::thread_rng().gen_range(0..quantity);
+        println!("Chosen: {}", chosen);
         let mut current: i32 = -1;
         for ((x, y), value) in self.positions.indexed_iter() {
             if let None = value {
                 current += 1;
+                println!("None at {},{}. Count: {}", x, y, current);
                 if current == chosen {
                     return Some(Position { x: x, y: y });
                 }
             }
         }
+        println!("No free positions found");
         None
     }
 
