@@ -23,6 +23,7 @@ pub enum MoveBlockResult {
     Success(BlocksMoved),
 }
 
+#[derive(Debug)]
 pub struct LogicState {
     pub position_map: PositionMap,
     pub current_id: Id,
@@ -76,6 +77,7 @@ impl LogicState {
 
     pub fn move_blocks_to(&mut self, direction: Direction) -> MoveBlockResult {
         if !self.ready_for_next_move {
+            println!("Ignoring requested move");
             return MoveBlockResult::None;
         }
 
@@ -211,6 +213,7 @@ fn move_requested_listener(
     mut blocks_moved: EventWriter<BlocksMoved>,
 ) {
     for move_event in move_events.iter() {
+        println!("State: {:?}", *state);
         match state.move_blocks_to(move_event.direction) {
             MoveBlockResult::None => (),
             MoveBlockResult::GameOver => game_over.send(GameOver),

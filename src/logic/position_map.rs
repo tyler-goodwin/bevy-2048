@@ -22,6 +22,7 @@ pub enum Direction {
 pub const WIDTH: usize = 4;
 pub const HEIGHT: usize = 4;
 
+#[derive(Debug)]
 pub struct PositionMap {
     positions: Array2<Option<Id>>,
     blocks: HashMap<Id, Number>,
