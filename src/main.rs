@@ -1,10 +1,11 @@
 use bevy::prelude::*;
-use events::{EventRegistrationPlugin, MoveRequested, ScoreChanged};
+use events::{EventRegistrationPlugin, ScoreChanged};
 
 mod animation;
 mod events;
 mod input;
 mod logic;
+mod stages;
 mod ui_plugin;
 
 struct State {
@@ -32,6 +33,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .insert_resource(State::default())
         .add_plugin(EventRegistrationPlugin)
+        .add_plugin(stages::StagePlugin)
         .add_plugin(logic::LogicPlugin)
         .add_plugin(input::InputPlugin)
         .add_plugin(ui_plugin::UIPlugin)

@@ -1,7 +1,8 @@
-use std::{collections::HashMap, ops::Add};
+use std::ops::Add;
 
 use crate::{
     events::{AnimationCompleted, BlocksMoved},
+    stages::CustomStage,
     ui_plugin::{self, number_renderer::Block},
 };
 
@@ -41,11 +42,22 @@ impl State {
     }
 }
 
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+enum Label {
+    MovedListener,
+}
+
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(State::new())
-            .add_system(blocks_moved_listener.system())
-            .add_system(run_animations.system());
+            .add_system_to_stage(
+                CustomStage::After,
+                blocks_moved_listener.system().label(Label::MovedListener),
+            )
+            .add_system_to_stage(
+                CustomStage::After,
+                run_animations.system().after(Label::MovedListener),
+            );
     }
 }
 

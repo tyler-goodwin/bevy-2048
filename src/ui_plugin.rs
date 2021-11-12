@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use std::path::Path;
 
-use crate::events::{
-    BestChanged, BlockAdded, BlocksDeleted, GameOver, GameRestarted, ScoreChanged,
+use crate::{
+    events::{BestChanged, BlockAdded, BlocksDeleted, GameOver, GameRestarted, ScoreChanged},
+    stages::CustomStage,
 };
 
 use self::{game_over_renderer::GameOverRoot, number_renderer::Block};
@@ -56,12 +57,12 @@ impl Plugin for UIPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(State::new())
             .add_startup_system(setup.system())
-            .add_system(score_changed_listener.system())
-            .add_system(best_changed_listener.system())
-            .add_system(block_added_listener.system())
-            .add_system(blocks_deleted_listener.system())
-            .add_system(game_over_listener.system())
-            .add_system(game_restarted_listener.system());
+            .add_system_to_stage(CustomStage::Before, block_added_listener.system())
+            .add_system_to_stage(CustomStage::Before, blocks_deleted_listener.system())
+            .add_system_to_stage(CustomStage::Before, game_over_listener.system())
+            .add_system_to_stage(CustomStage::After, score_changed_listener.system())
+            .add_system_to_stage(CustomStage::After, best_changed_listener.system())
+            .add_system_to_stage(CustomStage::Before, game_restarted_listener.system());
     }
 }
 
