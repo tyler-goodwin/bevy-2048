@@ -7,8 +7,17 @@ pub type Id = i32;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Position {
-    pub x: usize,
-    pub y: usize,
+    pub x: i32,
+    pub y: i32,
+}
+
+impl Position {
+    pub fn from(x: usize, y: usize) -> Self {
+        Self {
+            x: x.try_into().unwrap(),
+            y: y.try_into().unwrap(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -19,8 +28,8 @@ pub enum Direction {
     BOTTOM,
 }
 
-pub const WIDTH: usize = 4;
-pub const HEIGHT: usize = 4;
+pub const WIDTH: i32 = 4;
+pub const HEIGHT: i32 = 4;
 
 #[derive(Debug)]
 pub struct PositionMap {
@@ -31,20 +40,24 @@ pub struct PositionMap {
 impl PositionMap {
     pub fn new() -> Self {
         Self {
-            positions: Array2::<Option<Id>>::from_elem((WIDTH, HEIGHT), None),
+            positions: Array2::<Option<Id>>::from_elem((WIDTH as usize, HEIGHT as usize), None),
             blocks: HashMap::new(),
         }
     }
 
     pub fn new_with_existing_blocks(&self) -> Self {
         Self {
-            positions: Array2::<Option<Id>>::from_elem((WIDTH, HEIGHT), None),
+            positions: Array2::<Option<Id>>::from_elem((WIDTH as usize, HEIGHT as usize), None),
             blocks: self.blocks.clone(),
         }
     }
 
-    pub fn set(&mut self, x: usize, y: usize, id: Option<Id>) {
-        self.positions[[x, y]] = id
+    pub fn set(&mut self, x: i32, y: i32, id: Option<Id>) {
+        if x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT {
+            panic!("Attempt to set out of bounds")
+        }
+
+        self.positions[[x as usize, y as usize]] = id
     }
 
     pub fn add_block(&mut self, id: Id, number: Number) {
@@ -62,15 +75,19 @@ impl PositionMap {
         for ((x, y), value) in self.positions.indexed_iter() {
             if let Some(id) = value {
                 if *id == target {
-                    return Some(Position { x: x, y: y });
+                    return Some(Position::from(x, y));
                 }
             }
         }
         None
     }
 
-    pub fn get(&self, x: usize, y: usize) -> Option<Id> {
-        self.positions[[x, y]]
+    pub fn get(&self, x: i32, y: i32) -> Option<Id> {
+        if x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT {
+            return None;
+        }
+
+        self.positions[[x.try_into().unwrap(), y.try_into().unwrap()]]
     }
 
     fn get_number(&self, x: i32, y: i32) -> Option<Number> {
@@ -106,14 +123,13 @@ impl PositionMap {
         }
 
         let chosen = rand::thread_rng().gen_range(0..quantity);
-        println!("Chosen: {}", chosen);
+
         let mut current: i32 = -1;
         for ((x, y), value) in self.positions.indexed_iter() {
             if let None = value {
                 current += 1;
-                println!("None at {},{}. Count: {}", x, y, current);
                 if current == chosen {
-                    return Some(Position { x: x, y: y });
+                    return Some(Position::from(x, y));
                 }
             }
         }
@@ -146,11 +162,7 @@ impl PositionMap {
         self.positions == other.positions
     }
 
-    pub fn get_not_empty_position_from(
-        &self,
-        direction: Direction,
-        line: usize,
-    ) -> Option<Position> {
+    pub fn get_not_empty_position_from(&self, direction: Direction, line: i32) -> Option<Position> {
         match direction {
             Direction::LEFT => {
                 for i in 0..=3 {
@@ -185,6 +197,6 @@ impl PositionMap {
     }
 
     pub fn print_map(&self) {
-        println!("Map: {:?}", self.positions)
+        // println!("Map: {:?}", self.positions)
     }
 }

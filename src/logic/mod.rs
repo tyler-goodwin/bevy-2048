@@ -7,9 +7,12 @@ pub mod position_map;
 use number::Number;
 use position_map::{Direction, Id, Position, PositionMap};
 
-use crate::events::{
-    AnimationCompleted, BlockAdded, BlocksDeleted, BlocksMoved, GameOver, GameRestarted,
-    MoveRequested, RestartRequested,
+use crate::{
+    events::{
+        AnimationCompleted, BlockAdded, BlocksDeleted, BlocksMoved, GameOver, GameRestarted,
+        MoveRequested, RestartRequested,
+    },
+    stages::CustomStage,
 };
 
 pub enum GenerateResult {
@@ -133,7 +136,7 @@ impl LogicState {
         #[allow(unused_assignments)]
         let mut column_row = start_index;
 
-        let max: usize = 3;
+        let max: i32 = 3;
         for line in 0..=max {
             let mut cur_pos = self
                 .position_map
@@ -186,7 +189,7 @@ impl Plugin for LogicPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(LogicState::new())
             .add_startup_system(generate_starting_block.system())
-            .add_system(move_requested_listener.system())
+            .add_system_to_stage(CustomStage::After, move_requested_listener.system())
             .add_system(restart_request_listener.system())
             .add_system(game_restarted_listener.system())
             .add_system(animation_completed.system());
@@ -264,8 +267,6 @@ fn animation_completed(
 ) {
     for _ in events.iter() {
         if !state.ready_for_next_move {
-            state.ready_for_next_move = true;
-
             // Deal with merges
             let mut deleted: Vec<i32> = vec![];
             let mut added: Vec<(i32, Number, Position)> = vec![];
@@ -273,7 +274,15 @@ fn animation_completed(
             let length = state.merges.len();
             for i in 0..length {
                 let (id1, id2, position) = state.merges[i];
-                let next_number = state.position_map.get_number_with_id(id1).unwrap().next();
+                println!("{:?}", *state);
+                let next_number = state
+                    .position_map
+                    .get_number_with_id(id1)
+                    .expect(&format!(
+                        "Attempted to retrieve id {} but was not found",
+                        id1
+                    ))
+                    .next();
                 state.position_map.delete_block(id1);
                 state.position_map.delete_block(id2);
 
@@ -308,11 +317,13 @@ fn animation_completed(
             } else {
                 panic!("Unexpected result during first block generation")
             }
+
+            state.ready_for_next_move = true;
         }
     }
 }
 
-fn new_position(line: usize, column_row: &mut usize, direction: Direction) -> Position {
+fn new_position(line: i32, column_row: &mut i32, direction: Direction) -> Position {
     let tmp = *column_row;
     match direction {
         Direction::LEFT => {
