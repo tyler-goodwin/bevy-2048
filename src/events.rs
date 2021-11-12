@@ -10,6 +10,7 @@ impl Plugin for EventRegistrationPlugin {
             .add_event::<BlockAdded>()
             .add_event::<MoveRequested>()
             .add_event::<BlocksMoved>()
+            .add_event::<BlocksDeleted>()
             .add_event::<AnimationCompleted>()
             .add_event::<RestartRequested>()
             .add_event::<GameRestarted>()
@@ -47,7 +48,10 @@ impl MoveRequested {
 
 pub struct BlocksMoved {
     pub moves: Vec<(i32, Position)>,
-    pub merges: Vec<(i32, i32, Position)>,
+}
+
+pub struct BlocksDeleted {
+    pub deleted: Vec<i32>,
 }
 
 pub struct AnimationCompleted;

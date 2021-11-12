@@ -9,14 +9,14 @@ use bevy::prelude::*;
 
 pub struct AnimationPlugin;
 
-struct BlockAnimation {
+struct BlockMoveAnimation {
     target: (f32, f32),
     step: (f32, f32),
     total_iter: usize,
     current_iter: usize,
 }
 
-impl BlockAnimation {
+impl BlockMoveAnimation {
     pub fn new(target: (f32, f32), total_iter: usize) -> Self {
         Self {
             target: target,
@@ -30,7 +30,7 @@ impl BlockAnimation {
 struct State {
     running: bool,
     timer: Timer,
-    blocks: HashMap<i32, BlockAnimation>,
+    blocks: HashMap<i32, BlockMoveAnimation>,
 }
 
 impl State {
@@ -60,7 +60,7 @@ fn blocks_moved_listener(mut state: ResMut<State>, mut events: EventReader<Block
                 let target_x = ui_plugin::column_x(target.x.try_into().unwrap());
                 let target_y = ui_plugin::row_y(target.y.try_into().unwrap());
 
-                let animation = BlockAnimation::new((target_x, target_y), 15);
+                let animation = BlockMoveAnimation::new((target_x, target_y), 15);
                 state.blocks.insert(*id, animation);
             }
         }
@@ -75,7 +75,7 @@ fn blocks_moved_listener(mut state: ResMut<State>, mut events: EventReader<Block
 fn run_animations(
     time: Res<Time>,
     mut state: ResMut<State>,
-    mut query: Query<(&mut Style, &Block), With<Block>>,
+    mut query: Query<(&mut Style, &Block)>,
     mut events: EventWriter<AnimationCompleted>,
 ) {
     if state.timer.tick(time.delta()).just_finished() {

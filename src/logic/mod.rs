@@ -8,8 +8,8 @@ use number::Number;
 use position_map::{Direction, Id, Position, PositionMap};
 
 use crate::events::{
-    AnimationCompleted, BlockAdded, BlocksMoved, GameOver, GameRestarted, MoveRequested,
-    RestartRequested,
+    AnimationCompleted, BlockAdded, BlocksDeleted, BlocksMoved, GameOver, GameRestarted,
+    MoveRequested, RestartRequested,
 };
 
 pub enum GenerateResult {
@@ -28,6 +28,7 @@ pub struct LogicState {
     pub current_id: Id,
     pub is_game_over: bool,
     pub ready_for_next_move: bool,
+    pub merges: Vec<(i32, i32, Position)>,
 }
 
 impl LogicState {
@@ -37,6 +38,7 @@ impl LogicState {
             current_id: 0,
             is_game_over: false,
             ready_for_next_move: true,
+            merges: vec![],
         }
     }
 
@@ -47,10 +49,16 @@ impl LogicState {
         self.ready_for_next_move = true;
     }
 
-    pub fn generate_block(&mut self) -> GenerateResult {
+    pub fn add_block(&mut self, number: Number, position: Position) -> i32 {
         let id = self.current_id;
         self.current_id += 1;
 
+        self.position_map.add_block(id, number);
+        self.position_map.set(position.x, position.y, Some(id));
+        id
+    }
+
+    pub fn generate_block(&mut self) -> GenerateResult {
         let random: f32 = rand::thread_rng().gen_range(0.0..1.0);
         let number = if random > 0.9 {
             Number::ONE
@@ -59,8 +67,7 @@ impl LogicState {
         };
 
         if let Some(position) = self.position_map.get_random_free_position() {
-            self.position_map.add_block(id, number);
-            self.position_map.set(position.x, position.y, Some(id));
+            let id = self.add_block(number, position);
             GenerateResult::BlockAdded(id, number, position)
         } else {
             GenerateResult::GameOver
@@ -93,9 +100,16 @@ impl LogicState {
 
             // This may need to go after animations completed
             self.position_map = new_map;
+            let mut merged_moves = moves.clone();
+            for (id1, id2, pos) in merges.iter() {
+                merged_moves.push((*id1, pos.clone()));
+                merged_moves.push((*id2, *pos));
+            }
+
+            self.merges = merges.clone();
+
             MoveBlockResult::Success(BlocksMoved {
-                moves: moves,
-                merges: merges,
+                moves: merged_moves,
             })
         } else {
             MoveBlockResult::None
@@ -243,10 +257,43 @@ fn animation_completed(
     mut state: ResMut<LogicState>,
     mut events: EventReader<AnimationCompleted>,
     mut block_added: EventWriter<BlockAdded>,
+    mut deleted_blocks: EventWriter<BlocksDeleted>,
 ) {
     for _ in events.iter() {
         if !state.ready_for_next_move {
             state.ready_for_next_move = true;
+
+            // Deal with merges
+            let mut deleted: Vec<i32> = vec![];
+            let mut added: Vec<(i32, Number, Position)> = vec![];
+
+            let length = state.merges.len();
+            for i in 0..length {
+                let (id1, id2, position) = state.merges[i];
+                let next_number = state.position_map.get_number_with_id(id1).unwrap().next();
+                state.position_map.delete_block(id1);
+                state.position_map.delete_block(id2);
+
+                deleted.push(id1);
+                deleted.push(id2);
+
+                let id = state.add_block(next_number, position);
+                added.push((id, next_number, position));
+            }
+
+            if deleted.len() > 0 {
+                deleted_blocks.send(BlocksDeleted { deleted: deleted })
+            }
+
+            for (id, number, position) in added.iter() {
+                block_added.send(BlockAdded {
+                    id: *id,
+                    number: *number,
+                    position: *position,
+                });
+            }
+
+            state.merges = vec![];
 
             if let GenerateResult::BlockAdded(id, number, position) = state.generate_block() {
                 println!("Block added!");

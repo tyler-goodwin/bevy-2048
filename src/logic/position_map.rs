@@ -50,6 +50,24 @@ impl PositionMap {
         self.blocks.insert(id, number);
     }
 
+    pub fn delete_block(&mut self, target: Id) {
+        self.blocks.remove(&target);
+        if let Some(p) = self.find_position(target) {
+            self.set(p.x, p.y, None);
+        }
+    }
+
+    pub fn find_position(&self, target: Id) -> Option<Position> {
+        for ((x, y), value) in self.positions.indexed_iter() {
+            if let Some(id) = value {
+                if *id == target {
+                    return Some(Position { x: x, y: y });
+                }
+            }
+        }
+        None
+    }
+
     pub fn get(&self, x: usize, y: usize) -> Option<Id> {
         self.positions[[x, y]]
     }

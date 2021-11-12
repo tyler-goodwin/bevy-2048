@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use std::path::Path;
 
-use crate::events::{BestChanged, BlockAdded, GameOver, GameRestarted, ScoreChanged};
+use crate::events::{
+    BestChanged, BlockAdded, BlocksDeleted, GameOver, GameRestarted, ScoreChanged,
+};
 
 use self::{game_over_renderer::GameOverRoot, number_renderer::Block};
 
@@ -57,6 +59,7 @@ impl Plugin for UIPlugin {
             .add_system(score_changed_listener.system())
             .add_system(best_changed_listener.system())
             .add_system(block_added_listener.system())
+            .add_system(blocks_deleted_listener.system())
             .add_system(game_over_listener.system())
             .add_system(game_restarted_listener.system());
     }
@@ -145,6 +148,20 @@ fn block_added_listener(
     }
 }
 
+fn blocks_deleted_listener(
+    mut commands: Commands,
+    mut events: EventReader<BlocksDeleted>,
+    block_entities: Query<(Entity, &Block)>,
+) {
+    for event in events.iter() {
+        for (entity, block) in block_entities.iter() {
+            if event.deleted.iter().any(|id| block.id == *id) {
+                commands.entity(entity).despawn_recursive();
+            }
+        }
+    }
+}
+
 fn game_over_listener(
     mut commands: Commands,
     state: ResMut<State>,
@@ -173,13 +190,6 @@ fn game_restarted_listener(
         for game_over_root in game_over_entities.iter() {
             commands.entity(game_over_root).despawn_recursive();
         }
-    }
-}
-
-fn animate(time: Res<Time>, mut query: Query<&mut Transform, With<Text>>) {
-    for mut transform in query.iter_mut() {
-        transform.translation.x = 100.0 * time.seconds_since_startup().sin() as f32;
-        transform.translation.y = 100.0 * time.seconds_since_startup().cos() as f32;
     }
 }
 
